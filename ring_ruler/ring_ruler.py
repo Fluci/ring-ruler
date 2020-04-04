@@ -2,6 +2,7 @@ import bpy
 import datetime
 from mathutils import Vector
 
+from .instanced_ring import InstancedRing, RingPrototype
 from .ring import Ring
 from .ring_factory import RingFactory
 from .utils import log
@@ -66,11 +67,23 @@ class RingRulerOperator(bpy.types.Operator):
         
         return rings
 
+    def define_instanced_rings(self):
+        rings = []
+        prototype = RingPrototype.new(self.ring_size)
+        for i in range(self.begin, self.end+1):
+            ring_texts = [self.text, str(self.ring_size), str(self.year), str(i).zfill(self.zero_fill)]
+            text = " ".join(ring_texts)
+            r = InstancedRing.new(text, prototype)
+            rings.append(r)
+        
+        return rings
+
 
     def execute(self, context):
         # execute() is called when running the operator.
         self.log("Defining rings ...")
-        rings = self.define_rings()
+        # rings = self.define_rings()
+        rings = self.define_instanced_rings()
 
         self.log("Arranging ring layout ...")
         arrange_in_plane(rings)

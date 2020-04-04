@@ -23,6 +23,7 @@ class RingFactory:
             r.add_text_modifiers(context)
         
         self.log("Convert parts to mesh ...")
+        bpy.ops.object.select_all(action='DESELECT')
         for r in rings:
             r.convert_to_mesh(context)
 
