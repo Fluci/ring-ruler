@@ -3,6 +3,9 @@ from .utils import log
 
 
 class RingFactory:
+    def __init__(self, vector_merge = True):
+        self.vector_merge = vector_merge
+
     def log(self, msg):
         log(msg)
 
@@ -13,6 +16,7 @@ class RingFactory:
             r.create_objects(context)
         
         context.view_layer.objects.active = None
+        bpy.ops.object.select_all(action='DESELECT')
 
         self.log("Connect objects ...")
         for r in rings:
@@ -22,11 +26,30 @@ class RingFactory:
         for r in rings:
             r.convert_to_mesh(context)
 
-        self.log("Join parts ...")
-        parts = self.join_ring_objects(context, rings)
+        context.view_layer.objects.active = None
+        bpy.ops.object.select_all(action='DESELECT')
 
-        self.log("Merge parts ...")
-        delete_objects = self.merge_ring_objects(context, parts["base"], parts["subtracts"], parts["adds"])
+        if self.vector_merge:
+            self.log("Join parts ...")
+            parts = self.join_ring_objects(context, rings)
+
+            self.log("Merge parts ...")
+            delete_objects = self.merge_ring_objects(context, parts["base"], parts["subtracts"], parts["adds"])
+        else:
+            self.log(f"Merge parts of {len(rings)} rings ...")
+            delete_objects = []
+            bases = []
+            for r in rings:
+                base = r.get_base_object()
+                subs = r.get_subtract_objects()
+                adds = r.get_add_objects()
+                ds = self.merge_ring_objects(context, base, subs, adds)
+                bases.append(base)
+                delete_objects.extend(ds)
+
+            self.log("Join rings ...")
+            base = self.join_objs(bases)
+            base.name = "rings"
 
         # clean up
         for r in rings:
@@ -88,6 +111,9 @@ class RingFactory:
             }
 
     def merge_ring_objects(self, context, base, subtracts, adds):        
+        """
+        Modifies base such that base := (base + adds) - subs
+        """
         override = context.copy()
         override["active_object"] = base
 
@@ -95,13 +121,15 @@ class RingFactory:
             m = base.modifiers.new(name="boolean_add", type="BOOLEAN")
             m.operation = "UNION"
             m.object = add
-            bpy.ops.object.modifier_apply(override, apply_as="DATA", modifier="boolean_add")
+            r = bpy.ops.object.modifier_apply(override, apply_as="DATA", modifier="boolean_add")
+            assert "FINISHED" in r
         
         for sub in subtracts:
             m = base.modifiers.new(name="boolean_sub", type="BOOLEAN")
             m.operation = "DIFFERENCE"
             m.object = sub
             bpy.ops.object.modifier_apply(override, apply_as="DATA", modifier="boolean_sub")
+            assert "FINISHED" in r
             
         delete_objects = subtracts + adds
         return delete_objects

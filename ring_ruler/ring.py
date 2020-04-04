@@ -49,6 +49,8 @@ class Ring:
     
     def create_objects(self, context):
         ring_resolution = 96
+        bevel_resolution = 1
+        text_resolution = 24
         bpy.ops.mesh.primitive_cylinder_add(
             vertices=ring_resolution,
             radius=self.inner_radius, 
@@ -56,6 +58,7 @@ class Ring:
             enter_editmode=False, 
             location=self.location)
         self.inside = context.selected_objects[0]
+        self.inside.name = "Inside"
 
         bpy.ops.mesh.primitive_cylinder_add(
             vertices=ring_resolution,
@@ -64,6 +67,7 @@ class Ring:
             enter_editmode=False, 
             location=self.location)
         self.outside = context.selected_objects[0]
+        self.outside.name = "Outside"
         text_location = self.location + self.text_offset
 
         bpy.ops.curve.primitive_bezier_circle_add(
@@ -79,9 +83,9 @@ class Ring:
         self.text_obj.data.body = self.text
         self.text_obj.data.extrude = self.text_thickness
         self.text_obj.data.bevel_depth = 0.02
-        self.text_obj.data.bevel_resolution = 1
+        self.text_obj.data.bevel_resolution = bevel_resolution
         self.text_obj.data.size = 8
-        self.text_obj.data.resolution_u = 24
+        self.text_obj.data.resolution_u = text_resolution
 
         self.objects = [self.inside, self.outside, self.curve, self.text_obj]
 

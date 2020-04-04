@@ -28,7 +28,7 @@ def arrange_in_plane(rings):
         
         if plane_pos[0] + 2*dx > plane[0] or plane_pos[1] + 2*dy > plane[1]:
             # Next ring doesn't fit
-            print(f"Removing rings [{i}:]")
+            log(f"Removing rings [{i}:]")
             del rings[i:]
             break
         
@@ -69,13 +69,13 @@ class RingRulerOperator(bpy.types.Operator):
 
     def execute(self, context):
         # execute() is called when running the operator.
-        self.log("Creating rings ...")
+        self.log("Defining rings ...")
         rings = self.define_rings()
 
         self.log("Arranging ring layout ...")
         arrange_in_plane(rings)
 
-        rf = RingFactory()
+        rf = RingFactory(False)
         rf.create_rings(context, rings)
 
         return {'FINISHED'}            # Lets Blender know the operator finished successfully.
