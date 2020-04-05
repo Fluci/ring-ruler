@@ -16,6 +16,8 @@ class RingPrototype:
         text_size = height*7/8
         text_thickness = height/50
         text_offset = Vector((0, 0, -height*0.25))
+        year_offset = Vector((0, 0, -height*0.37))
+        year_size = height*0.75
         scale = 0.001
         return cls(
             scale*ring_size, 
@@ -24,7 +26,9 @@ class RingPrototype:
             scale*height, 
             scale*text_thickness, 
             scale*text_size,
+            scale*year_size,
             scale*text_offset,
+            scale*year_offset,
             font_regular)
 
     def __init__(self, 
@@ -34,16 +38,20 @@ class RingPrototype:
             height, 
             text_thickness, 
             text_size,
+            year_size,
             text_offset,
+            year_offset,
             font_regular):
         self.location = Vector((-size, -size, -size))
         self.size = size
         self.text_size = text_size
+        self.year_size = year_size
         self.inner_radius = inner_radius
         self.outer_radius = outer_radius
         self.height = height
         self.text_thickness = text_thickness
         self.text_offset = text_offset
+        self.year_offset = year_offset
         self.bounding_box = Vector((2*outer_radius + 2*text_thickness, 2*outer_radius + 2*text_thickness, height))
         self.ring_resolution = 96
         self.bevel_resolution = 1
@@ -58,6 +66,7 @@ class RingPrototype:
         self.baked = True
 
         text_location = self.location + self.text_offset
+        year_location = self.location + self.year_offset
 
         bpy.ops.mesh.primitive_cylinder_add(
             vertices=self.ring_resolution,
@@ -77,6 +86,7 @@ class RingPrototype:
         self.outside = context.selected_objects[0]
         self.outside.name = "Outside"
 
+        ## Add generic text
         bpy.ops.curve.primitive_bezier_circle_add(
             radius=self.outer_radius, 
             enter_editmode=False, 
@@ -91,11 +101,38 @@ class RingPrototype:
         self.text_obj.data.bevel_depth = self.bevel_depth 
         self.text_obj.data.bevel_resolution = self.bevel_resolution
         self.text_obj.data.size = self.text_size
+        self.text_obj.data.body = "Some text 0123"
         self.text_obj.data.resolution_u = self.text_resolution
+        self.text_obj.rotation_euler.x = math.pi
         if self.font_regular != None:
             self.text_obj.data.font = self.font_regular
 
         self.text_obj.select_set(False)
+
+        ## Add year
+        bpy.ops.curve.primitive_bezier_circle_add(
+                radius=self.outer_radius,
+                enter_editmode=False,
+                location=year_location)
+        self.year_curve = context.selected_objects[0]
+        self.year_curve.rotation_euler.z = -0.22
+
+        bpy.ops.object.text_add(
+                enter_editmode=False,
+                location=year_location)
+        self.year_obj = context.selected_objects[0]
+        self.year_obj.data.extrude = self.text_thickness
+        self.year_obj.data.bevel_depth = self.bevel_depth 
+        self.year_obj.data.bevel_resolution = self.bevel_resolution
+        self.year_obj.data.size = self.year_size
+        self.year_obj.data.body = "21"
+        self.year_obj.data.resolution_u = self.text_resolution
+        self.year_obj.rotation_euler.x = math.pi
+        self.year_obj.rotation_euler.z = -math.pi/2 - 0.22
+        if self.font_regular != None:
+            self.year_obj.data.font = self.font_regular
+        self.year_obj.select_set(False)
+
 
         self.connect_objects(context)
         self.merge_objects(context)
@@ -117,10 +154,19 @@ class RingPrototype:
         m.use_remove_disconnected = False
 
         # Fix text to ring curve
-        self.text_obj.rotation_euler.x = math.pi
         m = self.text_obj.modifiers.new(name="curve", type="CURVE")
         m.deform_axis = "NEG_X"
         m.object = self.curve
+
+        # Give year more geometry for better bending
+        m = self.year_obj.modifiers.new(name="remesh", type="REMESH")
+        m.octree_depth = 8
+        m.use_remove_disconnected = False
+
+        # Fix year to ring curve
+        m = self.year_obj.modifiers.new(name="curve", type="CURVE")
+        m.deform_axis = "NEG_X"
+        m.object = self.year_curve
 
     def merge_objects(self, context):
 
@@ -138,15 +184,16 @@ class RingPrototype:
 
 class InstancedRing:
     @classmethod
-    def new(cls, text: str, prototype):
+    def new(cls, text: str, year: str, prototype):
         """
         text: text to write on ring
         """
         location = Vector((0,0,0))
-        return cls(text, location, prototype)
+        return cls(text, year, location, prototype)
 
-    def __init__(self, text, location, prototype):
+    def __init__(self, text, year, location, prototype):
         self.text = text
+        self.year = year
         self.location = location
         self.prototype = prototype
     
@@ -173,10 +220,13 @@ class InstancedRing:
     def create_objects(self, context):
         self.prototype.bake(context)
         text_location = self.location + self.prototype.text_offset
+        year_location = self.location + self.prototype.year_offset
         
+        ## Add base geometry
         self.base = self.prototype.base.copy()
         self.base.location = self.location
 
+        ## Add generic text
         self.curve = self.prototype.curve.copy()
         self.curve.location = text_location
         # For some strange reason, the convert_to_mesh step
@@ -189,35 +239,30 @@ class InstancedRing:
         self.text_obj.location = text_location
         self.text_obj.modifiers["curve"].object = self.curve
 
+        
+        ## Add Year Text
+        self.year_curve = self.prototype.year_curve.copy()
+        self.year_curve.location = year_location
+        self.year_curve.data = self.year_curve.data.copy() # deep copy
+
+        self.year_obj = self.prototype.year_obj.copy()
+        self.year_obj.data = self.year_obj.data.copy() # deep copy
+        self.year_obj.data.body = self.year
+        self.year_obj.location = year_location
+        self.year_obj.modifiers["curve"].object = self.year_curve
+
         context.collection.objects.link(self.base)
         context.collection.objects.link(self.curve)
         context.collection.objects.link(self.text_obj)
-
-        self.objects = [self.base, self.curve, self.text_obj]
+        context.collection.objects.link(self.year_curve)
+        context.collection.objects.link(self.year_obj)
 
     def add_text_modifiers(self, context):
         return
-        # Give text more geometry for better bending
-        m = self.text_obj.modifiers.new(name="remesh", type="REMESH")
-        m.octree_depth = 8
-        m.use_remove_disconnected = False
-
-        # Fix text to ring curve
-        self.text_obj.rotation_euler.x = math.pi
-        m = self.text_obj.modifiers.new(name="curve", type="CURVE")
-        m.deform_axis = "NEG_X"
-        m.object = self.curve
         
     def convert_to_mesh(self, context):
-        #me = self.text_obj.to_mesh()
-        #bpy.data.objects.new("text_mesh", me)
-        context.view_layer.objects.active = self.text_obj
-        self.text_obj.select_set(True)
-        bpy.ops.object.convert(target="MESH")
-        ## Check normals
-        # bpy.ops.mesh.normals_make_consistent()
-        # bpy.ops.mesh.print3d_clean_non_manifold()
-        self.text_obj.select_set(False)
+        convert_text_to_mesh(context, self.text_obj)
+        convert_text_to_mesh(context, self.year_obj)
 
     def get_base_object(self):
         return self.text_obj
@@ -226,5 +271,16 @@ class InstancedRing:
         return []
 
     def get_add_objects(self):
-        return [self.base]
+        return [self.base, self.year_obj]
+
+def convert_text_to_mesh(context, text):
+        #me = self.text_obj.to_mesh()
+        #bpy.data.objects.new("text_mesh", me)
+        context.view_layer.objects.active = text
+        text.select_set(True)
+        bpy.ops.object.convert(target="MESH")
+        ## Check normals
+        # bpy.ops.mesh.normals_make_consistent()
+        # bpy.ops.mesh.print3d_clean_non_manifold()
+        text.select_set(False)
 

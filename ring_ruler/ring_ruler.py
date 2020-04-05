@@ -8,11 +8,11 @@ from .ring_factory import RingFactory
 from .utils import log
 
 
-def arrange_in_plane(rings, width, height):
+def arrange_in_plane(rings, width, height, margin):
     plane_pos = Vector((0,0))
     plane = Vector((width, height))
     
-    margin = (0.003,0.003)
+    margin = (margin, margin)
     
     row_max = 0.0
     
@@ -87,9 +87,9 @@ class RingRulerOperator(bpy.types.Operator):
 
         prototype = RingPrototype.new(self.scale*self.ring_height, self.scale*self.ring_size, font_regular=font_regular)
         for i in range(self.begin, self.end+1):
-            ring_texts = [self.text, str(self.ring_size), str(self.year), str(i).zfill(self.zero_fill)]
+            ring_texts = [self.text, str(self.ring_size), str(i).zfill(self.zero_fill)]
             text = " ".join(ring_texts)
-            r = InstancedRing.new(text, prototype)
+            r = InstancedRing.new(text, str(self.year), prototype)
             rings.append(r)
         
         return rings
@@ -102,7 +102,7 @@ class RingRulerOperator(bpy.types.Operator):
         rings = self.define_instanced_rings()
 
         self.log("Arranging ring layout ...")
-        arrange_in_plane(rings, self.scale*0.001*self.workspace_width, self.scale*0.001*self.workspace_height)
+        arrange_in_plane(rings, self.scale*0.001*self.workspace_width, self.scale*0.001*self.workspace_height, self.scale*0.003)
 
         rf = RingFactory(False)
         rf.create_rings(context, rings)
