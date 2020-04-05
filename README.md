@@ -18,5 +18,9 @@ Blender will automatically unpack the zip and store all files at the right place
 
 In Blender, search for "Ring Ruler" or go to "Object -> Ring Ruler". A helper window with settings will pop up.
 
-The rings are created in original size (millimeters). The default cube measures 1x1x1 meter, so it covers the created rings. Delete/move it and zoom towards the center.
+The rings are created in original size (millimeters) scaled by a scale factor (usually 1000). 
+The default cube measures 1x1x1 meter, so it covers the created rings if the scale factor is 1.
+Delete/move it and zoom towards the center.
+
+You can choose a custom font in the drop down menu. The font must be loaded, do this by going to a text object and loading the font there in the "Font" tab.
 
