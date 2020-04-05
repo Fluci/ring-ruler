@@ -1,6 +1,19 @@
 import bpy
+import bmesh
 from .utils import log
 
+def triangulate_object(obj):
+    ## https://blender.stackexchange.com/questions/45698/triangulate-mesh-in-python
+    me = obj.data
+    # Get a BMesh representation
+    bm = bmesh.new()
+    bm.from_mesh(me)
+
+    bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method='BEAUTY', ngon_method='BEAUTY')
+
+    # Finish up, write the bmesh back to the mesh
+    bm.to_mesh(me)
+    bm.free()
 
 class RingFactory:
     def __init__(self, vector_merge = True):
@@ -36,6 +49,7 @@ class RingFactory:
 
             self.log("Merge parts ...")
             delete_objects = self.merge_ring_objects(context, parts["base"], parts["subtracts"], parts["adds"])
+            base = parts["base"]
         else:
             self.log(f"Merge parts of {len(rings)} rings ...")
             delete_objects = []
@@ -59,6 +73,11 @@ class RingFactory:
         self.log("Delete objects ...")
         bpy.ops.object.delete({"selected_objects": delete_objects})
 
+        # Polish base
+        self.log("Polish rings ...")
+        triangulate_object(base)
+
+        self.log("Done.")
         context.view_layer.objects.active = None        
 
 
@@ -118,12 +137,17 @@ class RingFactory:
         override = context.copy()
         override["active_object"] = base
 
-        for add in adds:
-            m = base.modifiers.new(name="boolean_add", type="BOOLEAN")
-            m.operation = "UNION"
-            m.object = add
-            r = bpy.ops.object.modifier_apply(override, apply_as="DATA", modifier="boolean_add")
-            assert "FINISHED" in r
+        if True:
+            all_objs = [base]
+            all_objs.extend(adds)
+            self.join_objs(all_objs)
+        else:
+            for add in adds:
+                m = base.modifiers.new(name="boolean_add", type="BOOLEAN")
+                m.operation = "UNION"
+                m.object = add
+                r = bpy.ops.object.modifier_apply(override, apply_as="DATA", modifier="boolean_add")
+                assert "FINISHED" in r
         
         for sub in subtracts:
             m = base.modifiers.new(name="boolean_sub", type="BOOLEAN")

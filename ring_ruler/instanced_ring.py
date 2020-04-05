@@ -14,15 +14,18 @@ class RingPrototype:
         inner_radius = (ring_size-1)/2
         outer_radius = (ring_size+3)/2
         height = 8
+        text_size = 8
         text_thickness = 0.15
         text_offset = Vector((0, 0, -(height-2)/2))
+        scale = 0.001
         return cls(
-            ring_size, 
-            inner_radius, 
-            outer_radius, 
-            height, 
-            text_thickness, 
-            text_offset)
+            scale*ring_size, 
+            scale*inner_radius, 
+            scale*outer_radius, 
+            scale*height, 
+            scale*text_thickness, 
+            scale*text_size,
+            scale*text_offset)
 
     def __init__(self, 
             size, 
@@ -30,15 +33,21 @@ class RingPrototype:
             outer_radius, 
             height, 
             text_thickness, 
+            text_size,
             text_offset):
-        self.location = Vector((-10, -10, -10))
+        self.location = Vector((-size, -size, -size))
         self.size = size
+        self.text_size = text_size
         self.inner_radius = inner_radius
         self.outer_radius = outer_radius
         self.height = height
         self.text_thickness = text_thickness
         self.text_offset = text_offset
         self.bounding_box = Vector((2*outer_radius + 2*text_thickness, 2*outer_radius + 2*text_thickness, height))
+        self.ring_resolution = 96
+        self.bevel_resolution = 1
+        self.text_resolution = 24
+        self.bevel_depth = 0.0002
         self.baked = False
 
     def bake(self, context):
@@ -46,22 +55,19 @@ class RingPrototype:
             return
         self.baked = True
 
-        ring_resolution = 96
-        bevel_resolution = 1
-        text_resolution = 24
         text_location = self.location + self.text_offset
 
         bpy.ops.mesh.primitive_cylinder_add(
-            vertices=ring_resolution,
+            vertices=self.ring_resolution,
             radius=self.inner_radius, 
-            depth=self.height+2, 
+            depth=self.height*1.3, 
             enter_editmode=False, 
             location=self.location)
         self.inside = context.selected_objects[0]
         self.inside.name = "Inside"
 
         bpy.ops.mesh.primitive_cylinder_add(
-            vertices=ring_resolution,
+            vertices=self.ring_resolution,
             radius=self.outer_radius, 
             depth=self.height, 
             enter_editmode=False, 
@@ -80,10 +86,10 @@ class RingPrototype:
             location=text_location)
         self.text_obj = context.selected_objects[0]
         self.text_obj.data.extrude = self.text_thickness
-        self.text_obj.data.bevel_depth = 0.02
-        self.text_obj.data.bevel_resolution = bevel_resolution
-        self.text_obj.data.size = 8
-        self.text_obj.data.resolution_u = text_resolution
+        self.text_obj.data.bevel_depth = self.bevel_depth 
+        self.text_obj.data.bevel_resolution = self.bevel_resolution
+        self.text_obj.data.size = self.text_size
+        self.text_obj.data.resolution_u = self.text_resolution
         self.text_obj.select_set(False)
 
         self.connect_objects(context)
@@ -203,6 +209,9 @@ class InstancedRing:
         context.view_layer.objects.active = self.text_obj
         self.text_obj.select_set(True)
         bpy.ops.object.convert(target="MESH")
+        ## Check normals
+        # bpy.ops.mesh.normals_make_consistent()
+        # bpy.ops.mesh.print3d_clean_non_manifold()
         self.text_obj.select_set(False)
 
     def get_base_object(self):

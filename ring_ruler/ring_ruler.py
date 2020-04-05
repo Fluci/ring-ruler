@@ -10,9 +10,9 @@ from .utils import log
 
 def arrange_in_plane(rings):
     plane_pos = Vector((0,0))
-    plane = Vector((200, 200))
+    plane = Vector((0.2, 0.2))
     
-    margin = (3,3)
+    margin = (0.003,0.003)
     
     row_max = 0.0
     
@@ -50,7 +50,7 @@ class RingRulerOperator(bpy.types.Operator):
     ring_size: bpy.props.IntProperty(name="Ring Size", default=15, min=9, max=20)
     text: bpy.props.StringProperty(name="Text", default="CH")
     begin: bpy.props.IntProperty(name="Begin", default=1, min=0, max=99999)
-    end: bpy.props.IntProperty(name="End", default=100, min=0, max=99999)
+    end: bpy.props.IntProperty(name="End", default=3, min=0, max=99999)
     year: bpy.props.IntProperty(name="Year", default=datetime.datetime.now().year%100, min=0, max=99)
     zero_fill: bpy.props.IntProperty(name="Fill zeros", default=4, min=0, max=6) 
 
