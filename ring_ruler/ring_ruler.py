@@ -41,6 +41,13 @@ def arrange_in_plane(rings, width, height):
         r.location = Vector((x,y,z))
         plane_pos[0] += 2*dx        
 
+def font_enum_func(self, context):
+    fonts = []
+    for f in bpy.data.fonts:
+        # identifier, name, descripion, [icon, [number]]
+        fonts.append((f.name, f.name, f"Pick {f.name}"))
+    return fonts
+
 class RingRulerOperator(bpy.types.Operator):
     """Generates a bunch of rings with text on them"""      # Use this as a tooltip for menu items and buttons.
     bl_idname = "object.ring_ruler"        # Unique identifier for buttons and menu items to reference.
@@ -55,6 +62,9 @@ class RingRulerOperator(bpy.types.Operator):
     workspace_width: bpy.props.IntProperty(name="Print width", default=200, min=0, max=999)
     workspace_height: bpy.props.IntProperty(name="Print height", default=200, min=0, max=999)
     zero_fill: bpy.props.IntProperty(name="Fill zeros", default=4, min=0, max=6) 
+    font_regular: bpy.props.EnumProperty(name="Font", items=font_enum_func)
+    scale: bpy.props.FloatProperty(name="Scale", default=1000, min=0, max=999999)
+    ring_height: bpy.props.FloatProperty(name="Height", default=8, min=0, max=20)
 
     def log(self, msg):
         log(msg)
@@ -64,14 +74,18 @@ class RingRulerOperator(bpy.types.Operator):
         for i in range(self.begin, self.end+1):
             ring_texts = [self.text, str(self.ring_size), str(self.year), str(i).zfill(self.zero_fill)]
             text = " ".join(ring_texts)
-            r = Ring.new(text, self.ring_size)
+            r = Ring.new(text, self.scale*self.ring_size)
             rings.append(r)
         
         return rings
 
     def define_instanced_rings(self):
         rings = []
-        prototype = RingPrototype.new(self.ring_size)
+        font_regular = None
+        if self.font_regular in bpy.data.fonts:
+            font_regular = bpy.data.fonts[self.font_regular]
+
+        prototype = RingPrototype.new(self.scale*self.ring_height, self.scale*self.ring_size, font_regular=font_regular)
         for i in range(self.begin, self.end+1):
             ring_texts = [self.text, str(self.ring_size), str(self.year), str(i).zfill(self.zero_fill)]
             text = " ".join(ring_texts)
@@ -88,7 +102,7 @@ class RingRulerOperator(bpy.types.Operator):
         rings = self.define_instanced_rings()
 
         self.log("Arranging ring layout ...")
-        arrange_in_plane(rings, 0.001*self.workspace_width, 0.001*self.workspace_height)
+        arrange_in_plane(rings, self.scale*0.001*self.workspace_width, self.scale*0.001*self.workspace_height)
 
         rf = RingFactory(False)
         rf.create_rings(context, rings)

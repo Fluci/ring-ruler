@@ -4,19 +4,18 @@ from mathutils import Vector
 
 class RingPrototype:
     @classmethod
-    def new(cls, ring_size=15):
+    def new(cls, height=8, ring_size=15, font_regular=None):
         """
         Factory function: Creates new rings with most values hard coded to proper defaults.
         
         text: text to write on ring
         ring_size: "official" size in mm (a ring with 16 mm inner diameter fits a cylinder of 15 mm, 15 mm is expected to be passed in)
         """
-        inner_radius = (ring_size-1)/2
-        outer_radius = (ring_size+3)/2
-        height = 8
-        text_size = 8
-        text_thickness = 0.15
-        text_offset = Vector((0, 0, -(height-2)/2))
+        inner_radius = (ring_size*1.07)/2
+        outer_radius = (ring_size*1.27)/2
+        text_size = height*7/8
+        text_thickness = height/50
+        text_offset = Vector((0, 0, -height*0.25))
         scale = 0.001
         return cls(
             scale*ring_size, 
@@ -25,7 +24,8 @@ class RingPrototype:
             scale*height, 
             scale*text_thickness, 
             scale*text_size,
-            scale*text_offset)
+            scale*text_offset,
+            font_regular)
 
     def __init__(self, 
             size, 
@@ -34,7 +34,8 @@ class RingPrototype:
             height, 
             text_thickness, 
             text_size,
-            text_offset):
+            text_offset,
+            font_regular):
         self.location = Vector((-size, -size, -size))
         self.size = size
         self.text_size = text_size
@@ -48,6 +49,7 @@ class RingPrototype:
         self.bevel_resolution = 1
         self.text_resolution = 24
         self.bevel_depth = 0.0002
+        self.font_regular = font_regular
         self.baked = False
 
     def bake(self, context):
@@ -90,6 +92,9 @@ class RingPrototype:
         self.text_obj.data.bevel_resolution = self.bevel_resolution
         self.text_obj.data.size = self.text_size
         self.text_obj.data.resolution_u = self.text_resolution
+        if self.font_regular != None:
+            self.text_obj.data.font = self.font_regular
+
         self.text_obj.select_set(False)
 
         self.connect_objects(context)
