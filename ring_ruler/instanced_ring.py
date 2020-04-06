@@ -4,21 +4,21 @@ from mathutils import Vector
 
 class RingPrototype:
     @classmethod
-    def new(cls, height=8, ring_size=15, font_regular=None):
+    def new(cls, height=8, ring_size=15, scale=0.0001, font_regular=None):
         """
         Factory function: Creates new rings with most values hard coded to proper defaults.
         
         text: text to write on ring
-        ring_size: "official" size in mm (a ring with 16 mm inner diameter fits a cylinder of 15 mm, 15 mm is expected to be passed in)
+        ring_size: A ring of size x has an inner diameter of x mm and an outer diameter of x+3 mm. The Wall thickness is 1.5mm.
+        scale: helper to convert from input values of mm to blender units.
         """
-        inner_radius = (ring_size*1.07)/2
-        outer_radius = (ring_size*1.27)/2
+        inner_radius = ring_size/2
+        outer_radius = (ring_size+3)/2
         text_size = height*7/8
-        text_thickness = height/50
+        text_thickness = ring_size/100
         text_offset = Vector((0, 0, -height*0.25))
         year_offset = Vector((0, 0, -height*0.37))
         year_size = height*0.75
-        scale = 0.001
         return cls(
             scale*ring_size, 
             scale*inner_radius, 

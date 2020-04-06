@@ -6,7 +6,7 @@ bl_info = {
     "name": "RingRuler",
     "description": "Generate a list of rings with writing on them.",
     "author": "Felice Serena",
-    "version": (1, 0, 0),
+    "version": (0, 2, 0),
     "blender": (2, 81, 0),
     "wiki_url": "https://github.com/Fluci/ring-ruler",
     "tracker_url": "https://github.com/Fluci/ring-ruler/issues",

@@ -55,13 +55,13 @@ class RingRulerOperator(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}  # Enable undo for the operator.
 
     ring_size: bpy.props.IntProperty(name="Ring Size", default=15, min=9, max=20)
-    text: bpy.props.StringProperty(name="Text", default="CH")
+    text: bpy.props.StringProperty(name="Text", default="CH <size> <index> FF")
     begin: bpy.props.IntProperty(name="Begin", default=1, min=0, max=99999)
     end: bpy.props.IntProperty(name="End", default=3, min=0, max=99999)
     year: bpy.props.IntProperty(name="Year", default=datetime.datetime.now().year%100, min=0, max=99)
     workspace_width: bpy.props.IntProperty(name="Print width", default=200, min=0, max=999)
     workspace_height: bpy.props.IntProperty(name="Print height", default=200, min=0, max=999)
-    zero_fill: bpy.props.IntProperty(name="Fill zeros", default=4, min=0, max=6) 
+    zero_fill: bpy.props.IntProperty(name="Fill zeros", default=3, min=0, max=6) 
     font_regular: bpy.props.EnumProperty(name="Font", items=font_enum_func)
     scale: bpy.props.FloatProperty(name="Scale", default=1000, min=0, max=999999)
     ring_height: bpy.props.FloatProperty(name="Height", default=8, min=0, max=20)
@@ -85,10 +85,10 @@ class RingRulerOperator(bpy.types.Operator):
         if self.font_regular in bpy.data.fonts:
             font_regular = bpy.data.fonts[self.font_regular]
 
-        prototype = RingPrototype.new(self.scale*self.ring_height, self.scale*self.ring_size, font_regular=font_regular)
+        prototype = RingPrototype.new(self.ring_height, self.ring_size, scale=self.scale*0.001, font_regular=font_regular)
         for i in range(self.begin, self.end+1):
-            ring_texts = [self.text, str(self.ring_size), str(i).zfill(self.zero_fill)]
-            text = " ".join(ring_texts)
+            index = str(i).zfill(self.zero_fill)
+            text = self.text.replace("<size>", str(self.ring_size)).replace("<index>", index)
             r = InstancedRing.new(text, str(self.year), prototype)
             rings.append(r)
         
